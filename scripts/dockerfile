@@ -1,0 +1,19 @@
+# Build stage
+FROM reg.chehejia.com/chj-k8s-change/public/golang:1.15.12 AS builder
+
+WORKDIR /{{ packageName }}
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /go/bin/{{ packageName }} ./cmd/app
+
+COPY --from=builder /go/bin/{{ packageName }} /chj/app/{{ packageName }}
+# 存在其他配置相关需要copy操作
+
+#Set System TimeZone
+# Set 阿里云软件更新源
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+RUN apk add --no-cache tzdata bash
+ENV TZ=Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# ENV WORKDIR=/chj/app/
+CMD ["/chj/app/{{ packageName }}"]
